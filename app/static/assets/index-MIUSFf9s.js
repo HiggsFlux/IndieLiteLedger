@@ -1,1 +1,0 @@
-import{d as n,b as o,o as t,e as a}from"./index-xTveqTne.js";const l=n({name:"system_openapi",__name:"index",setup(s){return(p,e)=>(t(),o("div",null,[...e[0]||(e[0]=[a("h1",null,"开放API管理 (OpenAPI)",-1)])]))}});export{l as default};

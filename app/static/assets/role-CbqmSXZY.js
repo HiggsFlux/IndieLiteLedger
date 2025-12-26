@@ -1,1 +1,0 @@
-import{a5 as t}from"./index-xTveqTne.js";function s(e){return t({url:"/system/role",method:"get",params:e})}function l(e){return t({url:"/system/role",method:"post",data:e})}function u(e,r){return t({url:`/system/role/${e}`,method:"put",data:r})}function n(e){return t({url:`/system/role/${e}`,method:"delete"})}export{n as a,l as b,u as c,s as f};
