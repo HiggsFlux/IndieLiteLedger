@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+.venv/
+venv/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Runtime
+app/uploads/
+static/uploads/
+storage/
+
+# Keys
+*.pem
+*.key
+
+# Commercial Code
+app/modules/plugins/commercial_kit/
