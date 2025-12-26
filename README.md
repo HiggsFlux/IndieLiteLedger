@@ -22,7 +22,7 @@ IndieLiteLedger 是一款专为独立开发者、数字游民和初创团队打�
 
 **本软件全部数据均本地化运行，无需担心隐私泄露，请放心食用。**
 
-![image-20251226214027373](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226214027373.png)
+![image-20251226214532668](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226214532668.png)
 
 ## 🚀 特性
 
@@ -36,32 +36,39 @@ IndieLiteLedger 是一款专为独立开发者、数字游民和初创团队打�
 
 不仅是记录联系方式，更是维护业务脉络。支持客户分类、来源追踪、意向等级管理，支持访问记录管理，完整记录每一位客户的成长轨迹。
 
-> ![客户管理](https://via.placeholder.com/800x450?text=Customer+Management+Screenshot) *(示例图，请替换为实际截图)*
+![image-20251226215156473](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226215156473.png)
 
 ### 📝 订单追踪
+
 全流程自动化管理。从订单创建、支付状态变更到续费提醒，让你实时掌握每一笔业务的流转状态，告别手工账本。
-> ![订单追踪](https://via.placeholder.com/800x450?text=Order+Tracking+Screenshot) *(示例图，请替换为实际截图)*
+
+![image-20251226215317225](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226215317225.png)
 
 ### 💸 成本管理
-精细化记录每一项支出。无论是服务器费用、AI 接口调用费还是其他经营成本，都能分类记录，为利润分析提供准确的数据支持。
-> ![成本管理](https://via.placeholder.com/800x450?text=Cost+Management+Screenshot) *(示例图，请替换为实际截图)*
 
-### 💰 财务对账
+精细化记录每一项支出。无论是服务器费用、AI 接口调用费还是其他经营成本，都能分类记录，为利润分析提供准确的数据支持。
+
+![image-20251226215603627](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226215603627.png)
+
+### 💰 工作台
+
 精细化财务看板。结合收入与成本，自动计算毛利，帮你清晰洞察业务的盈利能力。
 
-> ![财务管理](https://via.placeholder.com/800x450?text=Finance+Management+Screenshot) *(示例图，请替换为实际截图)*
+> 页面同首页，不再重复展示！
 
 ### 📊 销售分析工作台
 
 数据驱动经营。通过直观的仪表盘，分析客户分布、销售趋势及业绩占比。工作台让你一眼看清：今天赚了多少，未来增长在哪。
 
-> ![工作台](https://via.placeholder.com/800x450?text=Workbench+Analysis+Screenshot) *(示例图，请替换为实际截图)*
+![image-20251226214731334](https://typora999.oss-cn-beijing.aliyuncs.com/image-20251226214731334.png)
 
 ## 🛠️ 技术栈
 
 - **后端**: Python 3.10+, FastAPI, SQLAlchemy, Pydantic
 - **前端**: Vue 3, Vite, TypeScript, UnoCSS, Element Plus
 - **数据库**: SQLite / MySQL
+
+说明：为什么保留了SQLite，如果个人不愿意单独假设mysql服务或者自己打算打包成exe在单机下使用的情况下，SQLite足够了，简单轻便，备份只需要简单的复制粘贴~
 
 ## 🏁 快速开始
 
@@ -84,6 +91,8 @@ pip install -r requirements.txt
 
 复制 `.env.example` 为 `.env`，并根据需要修改配置（默认使用 SQLite）。
 
+> 这里重点说明，如果什么都没有配置，默认指向的是sqlite库，如果配置了mysql库信息并取消了注释，会链接您的mysql库。
+
 ### 4. 初始化数据库
 
 ```bash
@@ -92,6 +101,14 @@ python scripts/init_db.py
 
 ### 5. 启动服务
 
+根据您的操作系统，选择相应的启动方式：
+
+**Windows (PowerShell):**
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+**Linux / macOS:**
 ```bash
 uvicorn app.main:app --reload
 ```
