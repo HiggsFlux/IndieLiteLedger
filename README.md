@@ -2,7 +2,22 @@
 
 IndieLiteLedger 是一款专为独立开发者、数字游民和初创团队打造的轻量级业务助手。基于 FastAPI + Vue3 开发，集成了客户管理 (CRM)、订单追踪、财务对账及销售分析等核心功能，助你告别繁琐表格，用最简单的方式管理自己的小生意。
 
-(A lightweight business assistant for indie developers and small teams to manage CRM, orders, and finances. Built with FastAPI & Vue3, featuring high performance, clean code, and auto-switching between SQLite/MySQL.)
+## 📖 开发初衷
+
+**从一个“授权工具”开始的演进**
+
+起初，我只是想为自己开发的一套 AI RAG 系统做个简单的授权工具，方便管理许可证的生成。但随着时间的推移，我发现：
+- 只有授权是不够的，我需要**管理客户**，记录每一份授权背后的使用历史；
+- 只有客户也是不够的，我需要**订单管理**，想清楚地知道一年到头到底收了多少钱；
+- 只有收入依然是不够的，我还需要**成本记录**，想看看在服务器、API 接口上到底花了多少钱。
+
+于是，这个项目逐渐从一个单一工具演变成了现在的模样：涵盖**用户管理、销售管理、成本管理**的业务基础。为了能一眼看出自己是亏是赚，我进一步开发了**销售分析和数据工作台**，让经营成果通过图表直观展现。
+
+**写给同路人**
+
+我长期服务于各大企业，深知大系统的严谨与复杂。但作为一个独立的个体或小团队，我们不必过早地把自己困在繁琐的流程里，却也不能日复一日地过着糊涂日子。这个小软件或许不能让你生意瞬间红火，但它能帮你管理好每一份汗水换来的成果。
+
+**本软件全部数据均本地化运行，无需担心隐私泄露，请放心食用。**
 
 ## 🚀 特性
 
@@ -41,7 +56,7 @@ pip install -r requirements.txt
 
 ### 4. 初始化数据库
 ```bash
-python scripts/init_sys_config.py
+python scripts/init_db.py
 ```
 
 ### 5. 启动服务
