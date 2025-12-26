@@ -104,16 +104,16 @@ python scripts/init_db.py
 根据您的操作系统，选择相应的启动方式：
 
 **Windows (PowerShell):**
+
 ```powershell
 python -m uvicorn app.main:app --reload
 ```
 
 **Linux / macOS:**
+
 ```bash
 uvicorn app.main:app --reload
 ```
-
-访问 `http://127.0.0.1:8000/docs` 查看 API 文档。
 
 ## 📄 开源协议
 

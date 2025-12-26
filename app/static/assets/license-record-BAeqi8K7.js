@@ -1,0 +1,1 @@
+import{a5 as r}from"./index-xTveqTne.js";function t(e){return r({url:"/plugins/commercial/license/record/list",method:"get",params:e})}function c(e){return r({url:`/plugins/commercial/license/record/detail/${e}`,method:"get"})}function i(e){return r({url:`/plugins/commercial/license/record/download/${e}`,method:"get",responseType:"blob"})}export{c as a,i as d,t as f};
