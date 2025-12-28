@@ -6,7 +6,7 @@ from app.api import deps
 from app.models.cost import Cost
 from app.models.order import Order
 from app.models.user import User
-from app.schemas.cost import CostCreate, CostRead, CostStats, MonthlyStat
+from app.schemas.cost import CostCreate, CostRead, CostStats, CategoryStat
 from app.schemas.response import ResponseModel, success
 import uuid
 from datetime import date, datetime
@@ -86,98 +86,100 @@ def delete_cost(
 @router.get("/stats", response_model=ResponseModel[CostStats])
 def get_cost_stats(
     db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
     year: Optional[str] = None
 ) -> Any:
     """
-    Get aggregated finance stats (Revenue, Cost, Profit).
-    If year is not provided, defaults to current year.
+    Get aggregated cost stats (Monthly, Yearly, Breakdown).
     """
-    if not year:
-        year = str(datetime.now().year)
-        
-    start_date = f"{year}-01-01"
-    end_date = f"{year}-12-31 23:59:59"
+    now = datetime.now()
+    current_year = int(year) if year else now.year
+    current_month = now.month
+    
+    def apply_filters(query):
+        # RBAC: Staff can only see their own costs
+        if current_user.role == "STAFF":
+            return query.where(Cost.creator_id == current_user.id)
+        return query
 
-    # Revenue: Sum of Order.amount for the year
-    revenue_query = select(func.sum(Order.amount)).where(
-        Order.created_at >= start_date,
-        Order.created_at <= end_date,
-        Order.status == 'PAID' # Only count PAID orders
+    # --- 1. Monthly Stats ---
+    # Current Month
+    month_cost_query = select(func.sum(Cost.amount)).where(
+        extract('year', Cost.pay_time) == current_year,
+        extract('month', Cost.pay_time) == current_month
     )
-    total_revenue = db.scalar(revenue_query) or 0.0
+    month_cost_query = apply_filters(month_cost_query)
+    month_cost = db.scalar(month_cost_query) or 0.0
     
-    # Cost: Sum of Cost.amount for the year
-    cost_query = select(func.sum(Cost.amount)).where(
-        Cost.pay_time >= start_date,
-        Cost.pay_time <= end_date
-    )
-    total_cost = db.scalar(cost_query) or 0.0
-    
-    net_profit = float(total_revenue) - float(total_cost)
-    
-    if total_revenue > 0:
-        profit_margin = f"{(net_profit / float(total_revenue)) * 100:.1f}%"
-    else:
-        profit_margin = "0%"
+    # Last Month
+    last_month_year = current_year
+    last_month = current_month - 1
+    if last_month == 0:
+        last_month = 12
+        last_month_year -= 1
         
-    # Cost Breakdown by Category (Yearly)
+    month_cost_last_query = select(func.sum(Cost.amount)).where(
+        extract('year', Cost.pay_time) == last_month_year,
+        extract('month', Cost.pay_time) == last_month
+    )
+    month_cost_last_query = apply_filters(month_cost_last_query)
+    month_cost_last = db.scalar(month_cost_last_query) or 0.0
+    
+    month_growth = 0.0
+    if month_cost_last > 0:
+        month_growth = ((month_cost - month_cost_last) / month_cost_last) * 100
+    elif month_cost > 0:
+        month_growth = 100.0
+    
+    # --- 2. Yearly Stats ---
+    # Current Year
+    year_cost_query = select(func.sum(Cost.amount)).where(
+        extract('year', Cost.pay_time) == current_year
+    )
+    year_cost_query = apply_filters(year_cost_query)
+    year_cost = db.scalar(year_cost_query) or 0.0
+    
+    # Last Year
+    last_year = current_year - 1
+    year_cost_last_query = select(func.sum(Cost.amount)).where(
+        extract('year', Cost.pay_time) == last_year
+    )
+    year_cost_last_query = apply_filters(year_cost_last_query)
+    year_cost_last = db.scalar(year_cost_last_query) or 0.0
+    
+    year_growth = 0.0
+    if year_cost_last > 0:
+        year_growth = ((year_cost - year_cost_last) / year_cost_last) * 100
+    elif year_cost > 0:
+        year_growth = 100.0
+        
+    # --- 3. Category Breakdown (Yearly) ---
     breakdown_query = select(Cost.category, func.sum(Cost.amount)).where(
-        Cost.pay_time >= start_date,
-        Cost.pay_time <= end_date
-    ).group_by(Cost.category)
+        extract('year', Cost.pay_time) == current_year
+    )
+    breakdown_query = apply_filters(breakdown_query)
+    breakdown_query = breakdown_query.group_by(Cost.category).order_by(func.sum(Cost.amount).desc())
+    
     breakdown_results = db.execute(breakdown_query).all()
     
-    cost_breakdown = {category: float(amount) for category, amount in breakdown_results}
+    category_breakdown = []
+    total_breakdown_amount = sum([float(amount) for _, amount in breakdown_results])
     
-    # Trend Logic (Monthly for the selected year)
-    # Revenue Trend
-    rev_trend_query = select(
-        func.strftime('%Y-%m', Order.created_at).label('month'),
-        func.sum(Order.amount).label('revenue')
-    ).where(
-        Order.created_at >= start_date,
-        Order.created_at <= end_date,
-        Order.status == 'PAID'
-    ).group_by(text('month')).order_by(text('month'))
-    rev_trend = db.execute(rev_trend_query).all()
-    
-    # Cost Trend
-    cost_trend_query = select(
-        func.strftime('%Y-%m', Cost.pay_time).label('month'),
-        func.sum(Cost.amount).label('cost')
-    ).where(
-        Cost.pay_time >= start_date,
-        Cost.pay_time <= end_date
-    ).group_by(text('month')).order_by(text('month'))
-    cost_trend = db.execute(cost_trend_query).all()
-    
-    # Merge Data
-    trend_map: Dict[str, MonthlyStat] = {}
-    
-    for r in rev_trend:
-        month = r.month
-        if month not in trend_map:
-            trend_map[month] = MonthlyStat(month=month, revenue=0, cost=0, profit=0)
-        trend_map[month].revenue = float(r.revenue or 0)
+    for category, amount in breakdown_results:
+        amount_float = float(amount)
+        percent = (amount_float / total_breakdown_amount * 100) if total_breakdown_amount > 0 else 0.0
+        category_breakdown.append(CategoryStat(
+            name=category,
+            amount=amount_float,
+            percent=round(percent, 1)
+        ))
         
-    for c in cost_trend:
-        month = c.month
-        if month not in trend_map:
-            trend_map[month] = MonthlyStat(month=month, revenue=0, cost=0, profit=0)
-        trend_map[month].cost = float(c.cost or 0)
-        
-    # Calculate Profit
-    trend_list = []
-    for month in sorted(trend_map.keys()):
-        stat = trend_map[month]
-        stat.profit = stat.revenue - stat.cost
-        trend_list.append(stat)
-    
     return success(CostStats(
-        total_revenue=float(total_revenue),
-        total_cost=float(total_cost),
-        net_profit=net_profit,
-        profit_margin=profit_margin,
-        cost_breakdown=cost_breakdown,
-        trend=trend_list
+        month_cost=float(month_cost),
+        month_cost_last=float(month_cost_last),
+        month_growth=round(month_growth, 1),
+        year_cost=float(year_cost),
+        year_cost_last=float(year_cost_last),
+        year_growth=round(year_growth, 1),
+        category_breakdown=category_breakdown
     ))

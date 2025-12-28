@@ -4,10 +4,6 @@
 
 IndieLiteLedger is a lightweight business assistant designed for independent developers, digital nomads, and startup teams. Built with FastAPI and Vue3, it integrates core features like Customer Relationship Management (CRM), order tracking, financial reconciliation, and sales analysis. It helps you move away from complex spreadsheets and manage your small business in the simplest way possible.
 
-## 📅 Roadmap
-
-- [ ] **By January 6, 2026**: Complete the English translation of the system's main content.
-
 ## 📖 Origin Story
 
 **Evolution from a "Licensing Tool"**
@@ -23,8 +19,6 @@ Thus, the project gradually evolved from a single tool into its current form: co
 **To Fellow Travelers**
 
 Having served large enterprises for a long time, I understand the rigor and complexity of big systems. But as an individual or a small team, we don't need to trap ourselves in tedious processes too early, yet we shouldn't live in a muddle day after day. This small software may not make your business boom instantly, but it can help you manage the results of every drop of sweat you put in.
-
-**Note: The licensing feature has been removed from the open-source version due to non-universal logic. Thank you for your understanding. 😊**
 
 **All data in this software runs locally, so you don't have to worry about privacy leaks. Enjoy!**
 

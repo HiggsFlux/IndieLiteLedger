@@ -24,16 +24,16 @@ class CostRead(CostBase):
     class Config:
         from_attributes = True
 
-class MonthlyStat(BaseModel):
-    month: str
-    revenue: float
-    cost: float
-    profit: float
+class CategoryStat(BaseModel):
+    name: str
+    amount: float
+    percent: float
 
 class CostStats(BaseModel):
-    total_revenue: float
-    total_cost: float
-    net_profit: float
-    profit_margin: str
-    cost_breakdown: Dict[str, float]
-    trend: List[MonthlyStat]
+    month_cost: float
+    month_cost_last: float
+    month_growth: float
+    year_cost: float
+    year_cost_last: float
+    year_growth: float
+    category_breakdown: List[CategoryStat]
