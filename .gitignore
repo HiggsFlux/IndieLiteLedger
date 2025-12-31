@@ -1,30 +1,29 @@
-# Python
+# Python 运行时文件
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Environment
+# 环境变量和本地环境
 .env
 .venv/
 venv/
 
-# Database
+# 数据库文件
 *.db
 *.sqlite
 *.sqlite3
 
-# Logs
+# 日志与运行时
 *.log
-
-# Runtime
 app/uploads/
 static/uploads/
 storage/
 
-# Keys
+# 秘钥与敏感文件
 *.pem
 *.key
 
-# Commercial Code
-app/modules/plugins/commercial_kit/
+# 插件目录 (通用忽略规则)
+# 这样 GitHub 上不会看到具体的私有插件名称
+app/modules/plugins/*/
