@@ -23,7 +23,4 @@ storage/
 # 秘钥与敏感文件
 *.pem
 *.key
-
-# 插件目录 (通用忽略规则)
-# 这样 GitHub 上不会看到具体的私有插件名称
 app/modules/plugins/*/
