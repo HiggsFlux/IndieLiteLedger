@@ -5,7 +5,7 @@ from app.api import deps
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.schemas.response import ResponseModel, success
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 import uuid
 
 router = APIRouter()
@@ -70,8 +70,23 @@ def update_user(
     
     update_data = user_in.model_dump(exclude_unset=True)
     if update_data.get("password"):
+        # Verify old password
+        if not update_data.get("old_password"):
+            raise HTTPException(
+                status_code=400,
+                detail="修改密码需要提供原密码进行验证",
+            )
+        
+        if not verify_password(update_data["old_password"], user.hashed_password):
+            raise HTTPException(
+                status_code=400,
+                detail="原密码不正确",
+            )
+
         update_data["hashed_password"] = get_password_hash(update_data["password"])
         del update_data["password"]
+        if "old_password" in update_data:
+            del update_data["old_password"]
         
     for key, value in update_data.items():
         setattr(user, key, value)
@@ -81,7 +96,7 @@ def update_user(
     db.refresh(user)
     return success(user)
 
-@router.delete("/{user_id}", response_model=ResponseModel[UserRead])
+@router.delete("/{user_id}", response_model=ResponseModel[dict])
 def delete_user(
     *,
     db: Session = Depends(deps.get_db),
@@ -98,4 +113,4 @@ def delete_user(
         )
     db.delete(user)
     db.commit()
-    return success(user)
+    return success({"ok": True})

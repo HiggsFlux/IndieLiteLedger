@@ -1,8 +1,19 @@
-# IndieLiteLedger
+# TalkMyDataBoss
 
 [English](./README_EN.md) | [简体中文](./README.md)
 
-IndieLiteLedger 是一款专为独立开发者、数字游民和初创团队打造的轻量级业务助手。基于 FastAPI + Vue3 开发，集成了客户管理 (CRM)、订单追踪、财务对账及销售分析等核心功能，助你告别繁琐表格，用最简单的方式管理自己的小生意。
+TalkMyDataBoss 是一款专为独立开发者、数字游民和初创团队打造的业务支撑系统。基于 FastAPI + Vue3 开发，集成了客户管理 (CRM)、订单追踪、财务对账及销售分析等核心功能，助你告别繁琐表格，用最简单的方式管理自己的小生意。
+
+## ⚡ 快捷部署 (Quick Deploy)
+
+为了让您更快速地开启业务管理，我们新增了 **Docker 离线一键部署** 支持。无需复杂的环境搭建，仅需一个镜像文件即可完成安装：
+
+- 📦 **Docker 快捷部署**：支持 `docker-compose` 一键拉起，预设最佳实践配置。
+- 🛠️ **1Panel 集成**：针对 1Panel 面板用户提供专属编排文档，所见即所得。
+
+**部署文档链接：**
+- 📖 [Docker 离线部署指南](./IndieLiteLedger%20Docker%20部署指南.md)
+- 🚀 [1Panel 专属部署教程](./1Panel%20Docker%20部署文档.md)
 
 ## 📖 开发初衷
 

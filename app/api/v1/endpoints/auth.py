@@ -22,13 +22,13 @@ def login(
     """
     user = db.query(User).filter(User.username == login_data.userName).first()
     if not user:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+        raise HTTPException(status_code=400, detail="request.loginError")
     
-    # if not security.verify_password(login_data.password, user.hashed_password):
-    #     raise HTTPException(status_code=400, detail="Incorrect username or password")
+    if not security.verify_password(login_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="request.loginError")
         
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=400, detail="request.userInactive")
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(

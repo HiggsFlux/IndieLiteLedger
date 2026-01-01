@@ -739,10 +739,20 @@ def get_workbench_data(
     trend_map = {label: {"income": 0.0, "expense": 0.0} for label in labels}
     date_format = "%Y-%m" if group_mode == 'month' else "%Y-%m-%d"
     
+    # Detect database type
+    is_sqlite = "sqlite" in str(db.get_bind().url)
+    
     # Income Trend (From PaymentRecord)
     # Collections
+    if is_sqlite:
+        date_func = func.strftime(date_format, PaymentRecord.pay_time)
+    else:
+        # MySQL DATE_FORMAT mapping
+        mysql_format = date_format.replace('%Y', '%Y').replace('%m', '%m').replace('%d', '%d')
+        date_func = func.date_format(PaymentRecord.pay_time, mysql_format)
+
     income_trend_q = db.query(
-        func.strftime(date_format, PaymentRecord.pay_time).label('d'),
+        date_func.label('d'),
         func.sum(PaymentRecord.amount)
     ).filter(
         PaymentRecord.pay_time >= start_date,
@@ -755,8 +765,13 @@ def get_workbench_data(
             trend_map[date_str]["income"] += float(amt or 0)
             
     # Refunds (Subtract from Income)
+    if is_sqlite:
+        date_func_refund = func.strftime(date_format, PaymentRecord.pay_time)
+    else:
+        date_func_refund = func.date_format(PaymentRecord.pay_time, mysql_format)
+
     refund_trend_q = db.query(
-        func.strftime(date_format, PaymentRecord.pay_time).label('d'),
+        date_func_refund.label('d'),
         func.sum(PaymentRecord.amount)
     ).filter(
         PaymentRecord.pay_time >= start_date,
@@ -769,8 +784,13 @@ def get_workbench_data(
             trend_map[date_str]["income"] -= float(amt or 0)
             
     # Expense Trend
+    if is_sqlite:
+        date_func_expense = func.strftime(date_format, Cost.pay_time)
+    else:
+        date_func_expense = func.date_format(Cost.pay_time, mysql_format)
+
     expense_trend_q = db.query(
-        func.strftime(date_format, Cost.pay_time).label('d'),
+        date_func_expense.label('d'),
         func.sum(Cost.amount)
     ).filter(
         Cost.pay_time >= start_date,

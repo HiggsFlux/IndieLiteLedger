@@ -4,6 +4,17 @@
 
 IndieLiteLedger is a lightweight business assistant designed for independent developers, digital nomads, and startup teams. Built with FastAPI and Vue3, it integrates core features like Customer Relationship Management (CRM), order tracking, financial reconciliation, and sales analysis. It helps you move away from complex spreadsheets and manage your small business in the simplest way possible.
 
+## ⚡ Quick Deploy
+
+To help you get started faster, we have added support for **Docker Offline One-Click Deployment**. No complex environment setup is required—installation can be completed with just a single image file:
+
+- 📦 **Docker Quick Deploy**: Supports one-click startup via `docker-compose` with optimized default configurations.
+- 🛠️ **1Panel Integration**: Exclusive orchestration documentation for 1Panel users, providing a "what you see is what you get" experience.
+
+**Deployment Documentation:**
+- 📖 [Docker Offline Deployment Guide](./IndieLiteLedger%20Docker%20部署指南.md)
+- 🚀 [1Panel Exclusive Deployment Tutorial](./1Panel%20Docker%20部署文档.md)
+
 ## 📖 Origin Story
 
 **Evolution from a "Licensing Tool"**

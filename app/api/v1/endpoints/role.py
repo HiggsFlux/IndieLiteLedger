@@ -77,7 +77,7 @@ def update_role(
     db.refresh(role)
     return success(role)
 
-@router.delete("/{role_id}", response_model=ResponseModel[RoleRead])
+@router.delete("/{role_id}", response_model=ResponseModel[dict])
 def delete_role(
     *,
     db: Session = Depends(deps.get_db),
@@ -109,4 +109,4 @@ def delete_role(
         
     db.delete(role)
     db.commit()
-    return success(role)
+    return success({"ok": True})

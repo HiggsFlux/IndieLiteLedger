@@ -1,12 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from app.core.config import settings
 from app.api.v1.api import api_router
 from app.db.base import Base
 from app.db.session import engine
 import os
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Try to import plugin models so they are registered with Base
 try:
@@ -27,25 +32,66 @@ def get_application() -> FastAPI:
         openapi_url="/openapi.json"
     )
 
+    # CORS configuration
+    # Note: allow_origins=["*"] cannot be used with allow_credentials=True
+    # In production, you should specify the actual origins
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_HOSTS,
+        allow_origin_regex=".*", # Use regex to allow all origins while supporting credentials
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
+    # Middleware to log all requests
+    @application.middleware("http")
+    async def log_requests(request: Request, call_next):
+        logger.info(f"Incoming request: {request.method} {request.url.path}")
+        try:
+            response = await call_next(request)
+            logger.info(f"Response status: {response.status_code} for {request.method} {request.url.path}")
+            return response
+        except Exception as e:
+            logger.error(f"Request failed: {request.method} {request.url.path} - Error: {str(e)}")
+            raise
+
+    # Global exception handler for debugging
+    @application.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger.error(f"Unhandled exception during {request.method} {request.url.path}: {str(exc)}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal Server Error: {str(exc)}"},
+        )
+
+    # Health check
+    @application.get("/api/health")
+    async def health_check():
+        return {"status": "ok"}
+
     # Mount static directory for uploads
-    base_path = os.path.dirname(__file__)
-    uploads_path = os.path.join(base_path, "uploads")
-    os.makedirs(uploads_path, exist_ok=True)
-    application.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+    # Use absolute path for safety
+    upload_dir = os.path.abspath(settings.UPLOAD_DIR)
+    if not os.path.exists(upload_dir):
+        try:
+            os.makedirs(upload_dir, exist_ok=True)
+            logger.info(f"Created upload directory: {upload_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create upload directory {upload_dir}: {e}")
+    
+    # Debug: List contents of upload directory
+    try:
+        files = os.listdir(upload_dir)
+        logger.info(f"Upload directory {upload_dir} contains {len(files)} files")
+        if len(files) > 0:
+            logger.info(f"Sample files: {files[:5]}")
+    except Exception as e:
+        logger.error(f"Cannot list upload directory: {e}")
 
-    # Mount static directory for temporary uploads if any (compatibility)
-    old_uploads_path = os.path.join(base_path, "static", "uploads")
-    if os.path.exists(old_uploads_path):
-        application.mount("/static/uploads", StaticFiles(directory=old_uploads_path), name="static_uploads")
+    logger.info(f"Mounting /uploads to {upload_dir}")
+    application.mount("/uploads", StaticFiles(directory=upload_dir, check_dir=False), name="uploads")
 
+    # API routes
     application.include_router(api_router, prefix="/api/v1")
 
     # Plugin Loading
@@ -58,24 +104,38 @@ def get_application() -> FastAPI:
         print(f"Commercial plugin router not found or failed to load: {e}")
 
     # Serve static files from 'static' directory (Frontend)
-    static_path = os.path.join(base_path, "static")
+    # The frontend is built and placed in backend/app/static
+    app_path = os.path.dirname(os.path.abspath(__file__))
+    static_path = os.path.join(app_path, "static")
+    
+    logger.info(f"Static files path: {static_path}")
+    
     if os.path.exists(static_path):
         # 1. Mount assets directory specifically for performance
         assets_path = os.path.join(static_path, "assets")
         if os.path.exists(assets_path):
+            logger.info(f"Mounting /assets to {assets_path}")
             application.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
-        # 2. Catch-all route for SPA routing and other static files
+        # 2. Explicit route for root path
+        @application.get("/")
+        async def serve_index():
+            index_file = os.path.join(static_path, "index.html")
+            if os.path.exists(index_file):
+                return FileResponse(index_file)
+            return JSONResponse(status_code=404, content={"detail": "Frontend index.html not found"})
+
+        # 3. Catch-all route for SPA routing and other static files
         @application.get("/{full_path:path}")
         async def serve_spa(full_path: str):
             # Skip if path starts with api prefix to avoid masking 404s for API
             if full_path.startswith("api/"):
-                return {"detail": "Not Found"}
+                return JSONResponse(status_code=404, content={"detail": f"API route not found: {full_path}"})
             
             # Special handling for uploads path if not caught by mount
             if full_path.startswith("uploads/"):
                 relative_file = full_path.replace("uploads/", "", 1)
-                file_path = os.path.join(uploads_path, relative_file)
+                file_path = os.path.join(upload_dir, relative_file)
                 if os.path.isfile(file_path):
                     return FileResponse(file_path)
 
@@ -89,7 +149,7 @@ def get_application() -> FastAPI:
             if os.path.exists(index_file):
                 return FileResponse(index_file)
             
-            return {"detail": "Frontend index.html not found"}
+            return JSONResponse(status_code=404, content={"detail": "Frontend index.html not found"})
 
     return application
 

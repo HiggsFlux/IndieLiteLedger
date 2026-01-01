@@ -7,7 +7,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "IndieLiteLedger"
+    PROJECT_NAME: str = "TalkMyDataBoss"
     PROJECT_VERSION: str = "0.1.0"
     ALLOWED_HOSTS: List[str] = ["*"]
     
@@ -25,18 +25,50 @@ class Settings(BaseSettings):
 
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
+    # Uploads
+    # Default to a local 'uploads' directory relative to the app
+    UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
+    
     @model_validator(mode='after')
     def assemble_db_connection(self) -> 'Settings':
-        if self.SQLALCHEMY_DATABASE_URI:
-            return self
+        if os.getenv("DATABASE_URL"):
+            self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+            # If UPLOAD_DIR is not set in environment, stick to default
+            # But let's check for Docker storage mount regardless
         
-        if self.MYSQL_SERVER and self.MYSQL_USER and self.MYSQL_DB:
-            self.SQLALCHEMY_DATABASE_URI = (
-                f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@"
-                f"{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
-            )
+        # In Docker, we might have /app/storage mounted
+        storage_dir = "/app/storage"
+        # Always prefer /app/storage if it exists (Docker volume mount)
+        if os.path.isdir(storage_dir):
+            print(f"Detected Docker storage mount at {storage_dir}")
+            self.UPLOAD_DIR = os.path.join(storage_dir, "uploads")
+            
+            # Ensure upload dir exists immediately
+            try:
+                os.makedirs(self.UPLOAD_DIR, exist_ok=True)
+                print(f"Ensured upload directory exists: {self.UPLOAD_DIR}")
+            except Exception as e:
+                print(f"Warning: Could not create upload dir {self.UPLOAD_DIR}: {e}")
+
+            # Also use storage for sqlite if not using MySQL
+            if not (self.MYSQL_SERVER and self.MYSQL_USER and self.MYSQL_DB) and not self.SQLALCHEMY_DATABASE_URI:
+                self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(storage_dir, 'sql_app.db')}"
         else:
-            self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'sql_app.db')}"
+            print(f"No Docker storage found at {storage_dir}, using default local paths")
+            # Ensure local upload dir exists
+            try:
+                os.makedirs(self.UPLOAD_DIR, exist_ok=True)
+            except Exception:
+                pass
+
+        if not self.SQLALCHEMY_DATABASE_URI:
+             if self.MYSQL_SERVER and self.MYSQL_USER and self.MYSQL_DB:
+                self.SQLALCHEMY_DATABASE_URI = (
+                    f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@"
+                    f"{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+                )
+             else:
+                self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'sql_app.db')}"
             
         return self
 

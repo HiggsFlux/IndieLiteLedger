@@ -23,6 +23,7 @@ class UserUpdate(BaseModel):
     role_id: Optional[str] = None
     is_active: Optional[bool] = None
     password: Optional[str] = None
+    old_password: Optional[str] = None
 
 # Properties to return to client
 class UserRead(UserBase):

@@ -16,6 +16,15 @@ class CostBase(BaseModel):
 class CostCreate(CostBase):
     pass
 
+class CostUpdate(BaseModel):
+    title: Optional[str] = None
+    amount: Optional[Decimal] = None
+    category: Optional[str] = None
+    pay_time: Optional[date] = None
+    pay_account: Optional[str] = None
+    remark: Optional[str] = None
+    invoice_url: Optional[str] = None
+
 class CostRead(CostBase):
     id: uuid.UUID
     created_at: datetime

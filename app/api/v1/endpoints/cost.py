@@ -6,7 +6,7 @@ from app.api import deps
 from app.models.cost import Cost
 from app.models.order import Order
 from app.models.user import User
-from app.schemas.cost import CostCreate, CostRead, CostStats, CategoryStat
+from app.schemas.cost import CostCreate, CostRead, CostStats, CategoryStat, CostUpdate
 from app.schemas.response import ResponseModel, success
 import uuid
 from datetime import date, datetime
@@ -43,7 +43,7 @@ def read_costs(
     costs = db.execute(query).scalars().all()
     return success(costs)
 
-@router.post("/", response_model=ResponseModel[CostRead])
+@router.post("", response_model=ResponseModel[CostRead])
 def create_cost(
     *,
     db: Session = Depends(deps.get_db),
@@ -61,7 +61,35 @@ def create_cost(
     db.refresh(cost)
     return success(cost)
 
-@router.delete("/{id}", response_model=ResponseModel[CostRead])
+@router.put("/{id}", response_model=ResponseModel[CostRead])
+def update_cost(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    id: str,
+    cost_in: CostUpdate,
+) -> Any:
+    """
+    Update a cost.
+    """
+    cost = db.get(Cost, id)
+    if not cost:
+        raise HTTPException(status_code=404, detail="Cost not found")
+        
+    # RBAC: Staff can only update their own costs
+    if current_user.role == "STAFF" and cost.creator_id != current_user.id:
+         raise HTTPException(status_code=403, detail="Not authorized to update this cost")
+         
+    update_data = cost_in.dict(exclude_unset=True)
+    for field in update_data:
+        setattr(cost, field, update_data[field])
+        
+    db.add(cost)
+    db.commit()
+    db.refresh(cost)
+    return success(cost)
+
+@router.delete("/{id}", response_model=ResponseModel[dict])
 def delete_cost(
     *,
     db: Session = Depends(deps.get_db),
@@ -81,7 +109,7 @@ def delete_cost(
          
     db.delete(cost)
     db.commit()
-    return success(cost)
+    return success({"ok": True})
 
 @router.get("/stats", response_model=ResponseModel[CostStats])
 def get_cost_stats(
@@ -109,7 +137,7 @@ def get_cost_stats(
         extract('month', Cost.pay_time) == current_month
     )
     month_cost_query = apply_filters(month_cost_query)
-    month_cost = db.scalar(month_cost_query) or 0.0
+    month_cost = float(db.scalar(month_cost_query) or 0.0)
     
     # Last Month
     last_month_year = current_year
@@ -123,7 +151,7 @@ def get_cost_stats(
         extract('month', Cost.pay_time) == last_month
     )
     month_cost_last_query = apply_filters(month_cost_last_query)
-    month_cost_last = db.scalar(month_cost_last_query) or 0.0
+    month_cost_last = float(db.scalar(month_cost_last_query) or 0.0)
     
     month_growth = 0.0
     if month_cost_last > 0:
@@ -137,7 +165,7 @@ def get_cost_stats(
         extract('year', Cost.pay_time) == current_year
     )
     year_cost_query = apply_filters(year_cost_query)
-    year_cost = db.scalar(year_cost_query) or 0.0
+    year_cost = float(db.scalar(year_cost_query) or 0.0)
     
     # Last Year
     last_year = current_year - 1
@@ -145,7 +173,7 @@ def get_cost_stats(
         extract('year', Cost.pay_time) == last_year
     )
     year_cost_last_query = apply_filters(year_cost_last_query)
-    year_cost_last = db.scalar(year_cost_last_query) or 0.0
+    year_cost_last = float(db.scalar(year_cost_last_query) or 0.0)
     
     year_growth = 0.0
     if year_cost_last > 0:
@@ -163,10 +191,10 @@ def get_cost_stats(
     breakdown_results = db.execute(breakdown_query).all()
     
     category_breakdown = []
-    total_breakdown_amount = sum([float(amount) for _, amount in breakdown_results])
+    total_breakdown_amount = sum([float(amount or 0.0) for _, amount in breakdown_results])
     
     for category, amount in breakdown_results:
-        amount_float = float(amount)
+        amount_float = float(amount or 0.0)
         percent = (amount_float / total_breakdown_amount * 100) if total_breakdown_amount > 0 else 0.0
         category_breakdown.append(CategoryStat(
             name=category,
